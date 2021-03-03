@@ -1,0 +1,73 @@
+import pandas as pd
+from keras import models
+from keras import layers
+import numpy as np
+import random
+
+# 数据处理
+data = pd.read_csv("C:/Users/Administrator/Desktop/深度学习-Python/数据/中风预测/healthcare_data.csv")
+data.info()
+print("数据读取成功")
+
+# 打乱数据集
+# index = np.arange(5109)
+# np.random.shuffle(index)
+# data = data[index, :, :, :]
+# print("打乱数据集成功")
+
+# 数据处理
+# 将数据转化为one-hot编码
+gender = pd.get_dummies(data['gender'])
+married = pd.get_dummies(data['ever_married'], drop_first=True)
+work = pd.get_dummies(data['work_type'])
+residence = pd.get_dummies(data['Residence_type'], drop_first=True)
+smoke = pd.get_dummies(data['smoking_status'], drop_first=True)
+full_data = data.join([gender, married, work, residence, smoke])
+full_data.info()
+print(full_data.columns)
+print("数据整合成功")
+
+# 选取指定数据合成需要的数据的one-hot编码
+required_data = full_data[
+    ['age', 'hypertension', 'heart_disease',
+     'avg_glucose_level', 'bmi',
+     'Female', 'Male', 'Yes',
+     'Govt_job', 'Never_worked', 'Private',
+     'Self-employed', 'children', 'Urban',
+     'formerly smoked', 'never smoked', 'smokes']]
+print(required_data)
+required_data.head()
+required_data.info()
+print("输出最终数据成功")
+
+# 划分训练和测试集
+print("进行划分数据")
+train_data_feature = required_data.iloc[:4000]
+train_data_label = data.iloc[:4000, [11]]
+
+test_data_feature = required_data.iloc[4000:4500]
+test_data_label = data.iloc[4000:4500, [11]]
+
+predict_data_feature = required_data.iloc[4500:]
+predict_data_label = data.iloc[4500:, [11]]
+predict_data_label = np.argmax(predict_data_label)
+print("划分数据集完成")
+
+# 模型建立
+model = models.Sequential()
+model.add(layers.Dense(32, activation='relu', input_dim=17))
+model.add(layers.Dense(32, activation='sigmoid'))
+model.add(layers.Dense(1, activation='sigmoid'))
+model.compile(optimizer='rmsprop',
+              loss='binary_crossentropy',
+              metrics='acc')
+print("模型建立完成")
+
+history = model.fit(train_data_feature, train_data_label,
+                    batch_size=10,
+                    epochs=20)
+model.save("model.h5")
+
+# 模型进行预测
+predict = model.predict(predict_data_feature)
+print(predict)
